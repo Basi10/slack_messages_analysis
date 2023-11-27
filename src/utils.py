@@ -3,6 +3,7 @@ import sys
 import glob
 import json
 import datetime
+import re
 from collections import Counter
 from collections import Counter
 
@@ -166,17 +167,66 @@ def get_messages_from_channel(channel_path):
 
 
 def convert_2_timestamp(column, data):
-    """convert from unix time to readable timestamp
-        args: column: columns that needs to be converted to timestamp
-                data: data that has the specified column
+    """convert from Unix time to Pandas timestamp
+        args:
+            column: column that needs to be converted to timestamp
+            data: data that has the specified column
     """
     if column in data.columns.values:
-        timestamp_ = []
+        timestamps = []
         for time_unix in data[column]:
             if time_unix == 0:
-                timestamp_.append(0)
+                timestamps.append(pd.Timestamp('1970-01-01 00:00:00'))
             else:
-                a = datetime.datetime.fromtimestamp(float(time_unix))
-                timestamp_.append(a.strftime('%Y-%m-%d %H:%M:%S'))
-        return timestamp_
-    else: print(f"{column} not in data")
+                timestamp = pd.to_datetime(time_unix, unit='s')
+                timestamps.append(timestamp)
+        return timestamps
+    else:
+        print(f"{column} not in data")
+
+import pandas as pd
+import datetime
+
+import pandas as pd
+import datetime
+
+def most_frequent_time_range(column, data, interval_minutes=30):
+    """Find the time range during which the most frequent messages were sent.
+        args:
+            column: column that needs to be converted to timestamp
+            data: data that has the specified column
+            interval_minutes: time interval in minutes for binning
+    """
+    if column not in data.columns:
+        print(f"Column '{column}' not found in the data.")
+        return None
+
+    if data.empty:
+        print("No data found.")
+        return None
+
+    data['Timestamp'] = pd.to_datetime(data[column], unit='s')
+    
+    # Create a new column representing time intervals
+    data['TimeInterval'] = (data['Timestamp'].dt.hour * 60 + data['Timestamp'].dt.minute) // interval_minutes
+
+    # Count occurrences of each time interval
+    time_interval_counts = data['TimeInterval'].value_counts()
+
+    if time_interval_counts.empty:
+        print("No valid time intervals found.")
+        return None
+
+    # Identify the time interval with the maximum count
+    most_frequent_interval = time_interval_counts.idxmax()
+
+    # Calculate start and end times of the most frequent time range
+    start_time = pd.to_datetime(f"{most_frequent_interval * interval_minutes}min", format='%H%M')
+    end_time = start_time + pd.Timedelta(minutes=interval_minutes)
+
+    return start_time, end_time
+
+def get_tagged_users(df):
+    """get all @ in the messages"""
+
+    return df['msg_content'].map(lambda x: re.findall(r'@U\w+', x))
