@@ -180,3 +180,53 @@ def convert_2_timestamp(column, data):
                 timestamp_.append(a.strftime('%Y-%m-%d %H:%M:%S'))
         return timestamp_
     else: print(f"{column} not in data")
+
+def get_tagged_users(df):
+    """get all @ in the messages"""
+
+    return df['msg_content'].map(lambda x: re.findall(r'@U\w+', x))
+
+def parse_slack_reaction(path, channel):
+    """get reactions"""
+    dfall_reaction = pd.DataFrame()
+    combined = []
+    for json_file in glob.glob(f"{path}*.json"):
+        with open(json_file, 'r') as slack_data:
+            combined.append(slack_data)
+
+    reaction_name, reaction_count, reaction_users, msg, user_id = [], [], [], [], []
+
+    for k in combined:
+        slack_data = json.load(open(k.name, 'r', encoding="utf-8"))
+        
+        for i_count, i in enumerate(slack_data):
+            if 'reactions' in i.keys():
+                for j in range(len(i['reactions'])):
+                    msg.append(i['text'])
+                    user_id.append(i['user'])
+                    reaction_name.append(i['reactions'][j]['name'])
+                    reaction_count.append(i['reactions'][j]['count'])
+                    reaction_users.append(",".join(i['reactions'][j]['users']))
+                
+    data_reaction = zip(reaction_name, reaction_count, reaction_users, msg, user_id)
+    columns_reaction = ['reaction_name', 'reaction_count', 'reaction_users_count', 'message', 'user_id']
+    df_reaction = pd.DataFrame(data=data_reaction, columns=columns_reaction)
+    df_reaction['channel'] = channel
+    return df_reaction
+
+def get_community_participation(path):
+    """ specify path to get json files"""
+    combined = []
+    comm_dict = {}
+    for json_file in glob.glob(f"{path}*.json"):
+        with open(json_file, 'r') as slack_data:
+            combined.append(slack_data)
+    # print(f"Total json files is {len(combined)}")
+    for i in combined:
+        a = json.load(open(i.name, 'r', encoding='utf-8'))
+
+        for msg in a:
+            if 'replies' in msg.keys():
+                for i in msg['replies']:
+                    comm_dict[i['user']] = comm_dict.get(i['user'], 0)+1
+    return comm_dict
