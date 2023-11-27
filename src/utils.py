@@ -3,6 +3,7 @@ import sys
 import glob
 import json
 import datetime
+import re
 from collections import Counter
 from collections import Counter
 
@@ -166,67 +167,66 @@ def get_messages_from_channel(channel_path):
 
 
 def convert_2_timestamp(column, data):
-    """convert from unix time to readable timestamp
-        args: column: columns that needs to be converted to timestamp
-                data: data that has the specified column
+    """convert from Unix time to Pandas timestamp
+        args:
+            column: column that needs to be converted to timestamp
+            data: data that has the specified column
     """
     if column in data.columns.values:
-        timestamp_ = []
+        timestamps = []
         for time_unix in data[column]:
             if time_unix == 0:
-                timestamp_.append(0)
+                timestamps.append(pd.Timestamp('1970-01-01 00:00:00'))
             else:
-                a = datetime.datetime.fromtimestamp(float(time_unix))
-                timestamp_.append(a.strftime('%Y-%m-%d %H:%M:%S'))
-        return timestamp_
-    else: print(f"{column} not in data")
+                timestamp = pd.to_datetime(time_unix, unit='s')
+                timestamps.append(timestamp)
+        return timestamps
+    else:
+        print(f"{column} not in data")
+
+import pandas as pd
+import datetime
+
+import pandas as pd
+import datetime
+
+def most_frequent_time_range(column, data, interval_minutes=30):
+    """Find the time range during which the most frequent messages were sent.
+        args:
+            column: column that needs to be converted to timestamp
+            data: data that has the specified column
+            interval_minutes: time interval in minutes for binning
+    """
+    if column not in data.columns:
+        print(f"Column '{column}' not found in the data.")
+        return None
+
+    if data.empty:
+        print("No data found.")
+        return None
+
+    data['Timestamp'] = pd.to_datetime(data[column], unit='s')
+    
+    # Create a new column representing time intervals
+    data['TimeInterval'] = (data['Timestamp'].dt.hour * 60 + data['Timestamp'].dt.minute) // interval_minutes
+
+    # Count occurrences of each time interval
+    time_interval_counts = data['TimeInterval'].value_counts()
+
+    if time_interval_counts.empty:
+        print("No valid time intervals found.")
+        return None
+
+    # Identify the time interval with the maximum count
+    most_frequent_interval = time_interval_counts.idxmax()
+
+    # Calculate start and end times of the most frequent time range
+    start_time = pd.to_datetime(f"{most_frequent_interval * interval_minutes}min", format='%H%M')
+    end_time = start_time + pd.Timedelta(minutes=interval_minutes)
+
+    return start_time, end_time
 
 def get_tagged_users(df):
     """get all @ in the messages"""
 
     return df['msg_content'].map(lambda x: re.findall(r'@U\w+', x))
-
-def parse_slack_reaction(path, channel):
-    """get reactions"""
-    dfall_reaction = pd.DataFrame()
-    combined = []
-    for json_file in glob.glob(f"{path}*.json"):
-        with open(json_file, 'r') as slack_data:
-            combined.append(slack_data)
-
-    reaction_name, reaction_count, reaction_users, msg, user_id = [], [], [], [], []
-
-    for k in combined:
-        slack_data = json.load(open(k.name, 'r', encoding="utf-8"))
-        
-        for i_count, i in enumerate(slack_data):
-            if 'reactions' in i.keys():
-                for j in range(len(i['reactions'])):
-                    msg.append(i['text'])
-                    user_id.append(i['user'])
-                    reaction_name.append(i['reactions'][j]['name'])
-                    reaction_count.append(i['reactions'][j]['count'])
-                    reaction_users.append(",".join(i['reactions'][j]['users']))
-                
-    data_reaction = zip(reaction_name, reaction_count, reaction_users, msg, user_id)
-    columns_reaction = ['reaction_name', 'reaction_count', 'reaction_users_count', 'message', 'user_id']
-    df_reaction = pd.DataFrame(data=data_reaction, columns=columns_reaction)
-    df_reaction['channel'] = channel
-    return df_reaction
-
-def get_community_participation(path):
-    """ specify path to get json files"""
-    combined = []
-    comm_dict = {}
-    for json_file in glob.glob(f"{path}*.json"):
-        with open(json_file, 'r') as slack_data:
-            combined.append(slack_data)
-    # print(f"Total json files is {len(combined)}")
-    for i in combined:
-        a = json.load(open(i.name, 'r', encoding='utf-8'))
-
-        for msg in a:
-            if 'replies' in msg.keys():
-                for i in msg['replies']:
-                    comm_dict[i['user']] = comm_dict.get(i['user'], 0)+1
-    return comm_dict
