@@ -8,10 +8,12 @@ It is an analysis done on data extracted from Slack based on different weeks of 
 Run tests using the following command:
 
 ```bash
-make test
+pytest
 ```
-
 This will execute the unit tests located in the tests directory.
+
+## Screenshots
+![Wordcloud](images/wordcloud.png?raw=true "Word Cloud")
 
 ## Notebooks
 The notebooks directory contains Jupyter notebooks that demonstrate specific use cases and analyses. Refer to these notebooks for hands-on examples.

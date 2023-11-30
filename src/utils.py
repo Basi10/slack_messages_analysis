@@ -61,17 +61,15 @@ def get_messages_dict(msgs):
             "link_count":[]
             }
 
-
-    for msg in msgs:
+    for index,msg in msgs.iterrows():
         if "subtype" not in msg:
             try:
                 msg_list["msg_id"].append(msg["client_msg_id"])
             except:
                 msg_list["msg_id"].append(None)
-            
-            msg_list["text"].append(msg["text"])
-            msg_list["user"].append(msg["user"])
-            msg_list["ts"].append(msg["ts"])
+            msg_list["text"].append(msg["msg_content"])
+            msg_list["user"].append(msg["sender_name"])
+            msg_list["ts"].append(msg["Timestamp"])
             
             if "reactions" in msg:
                 msg_list["reactions"].append(msg["reactions"])
@@ -183,12 +181,6 @@ def convert_2_timestamp(column, data):
         return timestamps
     else:
         print(f"{column} not in data")
-
-import pandas as pd
-import datetime
-
-import pandas as pd
-import datetime
 
 def most_frequent_time_range(column, data, interval_minutes=30):
     """Find the time range during which the most frequent messages were sent.

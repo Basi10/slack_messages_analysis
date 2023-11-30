@@ -43,25 +43,29 @@ class SlackDataLoader:
         '''
         write a function to get all the users from the json file
         '''
-        #with open(os.path.join(self.path, 'users.json'), 'r') as f:
-        #    users = json.load(f)
+        with open(os.path.join(self.path, 'users.json'), 'r') as f:
+            users = json.load(f)
 
-        #return users
+        return users
     
     def get_channels(self):
         '''
         write a function to get all the channels from the json file
         '''
-        #with open(os.path.join(self.path, 'channels.json'), 'r') as f:
-        #    channels = json.load(f)
+        with open(os.path.join(self.path, 'channels.json'), 'r') as f:
+            channels = json.load(f)
 
-        #return channels
+        return channels
 
     def get_channel_messages(self, channel_name):
         '''
         write a function to get all the messages from a channel
         
         '''
+        channel_path = os.path.join(self.path, channel_name)
+        channel_json_files = os.listdir(channel_path)
+        channel_msgs = [json.load(open(channel_path + "/" + f)) for f in channel_json_files]
+        return channel_msgs
 
     # 
     def get_user_map(self):
@@ -86,9 +90,11 @@ class SlackDataLoader:
             6. reset the index and return dataframe
         """
 
-        # specify path to get json files
-        combined = [json.load(open(json_file, 'r', encoding="utf8")) for json_file in glob.glob(f"{path_channel}*.json")]
-
+        combined = []
+        for json_file in glob.glob(f"{path_channel}*.json"):
+            with open(json_file, 'r', encoding="utf8") as slack_data:
+                data = json.load(slack_data)
+                combined.append(data)
 
         # loop through all json files and extract required informations
         dflist = []
