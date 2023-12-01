@@ -9,7 +9,7 @@ import streamlit as st
 def app():
     st.title('Home')
 
-    st.write("Trending topics about world's Economics.")
+    st.write("Trending topics on 10X Batch 6.")
 
     st.write(
         'Go to the data navigation to learn more about the data and the visualization page to get insight of the Data.')
